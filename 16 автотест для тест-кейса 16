@@ -1,0 +1,70 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_successful_password_recovery_email(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Click on the 'Forgot password?' link
+    forgot_password_link = browser.find_element(By.ID, "forgot-password")
+    forgot_password_link.click()
+
+    # 3. Act: Click on 'Email' tab
+    email_tab = browser.find_element(By.ID, "reset-by-email")
+    email_tab.click()
+    
+    # 4. Act: Enter valid email for password recovery
+    email_input = browser.find_element(By.ID, "email")
+    email_input.send_keys("ваш_email")  # Замените на ваш реальный email
+
+    captcha_input = browser.find_element(By.ID, 'captcha')
+    #  !!!ВНИМАНИЕ!!!: Тут нужно ввести капчу, автоматизировать сложно. Пока пропускаем
+    #  В РЕАЛЬНЫХ АВТОТЕСТАХ НУЖНО ИСПОЛЬЗОВАТЬ ДРУГОЙ ПОДХОД (например, обходить капчу, выключать ее, использовать мок-сервер и т.д.)
+    time.sleep(5) #Даем время ввести капчу
+
+     # Act: Нажать кнопку "Продолжить"
+    continue_button = browser.find_element(By.ID, 'reset-by-email')
+    continue_button.click()
+
+    # 5. Act: Get and Enter valid email code
+    # !!!ВНИМАНИЕ!!!: Здесь нужно перехватить код из email.
+    #  В РЕАЛЬНЫХ АВТОТЕСТАХ НУЖНО ИСПОЛЬЗОВАТЬ ДРУГОЙ ПОДХОД (например, email API, мок-сервер и т.д.)
+    time.sleep(30)  # Даем время получить код
+
+    email_code_input = browser.find_element(By.ID, "code")
+    email_code_input.send_keys("временный_код")  # Замените на ваш полученный код
+
+     # Act: Нажать кнопку "Продолжить"
+    continue_button_2 = browser.find_element(By.ID, 'reset-by-code')
+    continue_button_2.click()
+
+    # 6. Act: Enter and confirm new password
+    new_password_input = browser.find_element(By.ID, "password-new")
+    new_password_input.send_keys("новый_пароль") # Замените на желаемый новый пароль
+
+    confirm_password_input = browser.find_element(By.ID, "password-confirm")
+    confirm_password_input.send_keys("новый_пароль") # Замените на желаемый новый пароль
+
+     # Act: Нажать кнопку "Сохранить"
+    save_password_button = browser.find_element(By.ID, "reset-password-submit")
+    save_password_button.click()
+
+    # 7. Assert: Verify successful password reset (check if user is redirected to login page)
+    wait = WebDriverWait(browser, 10)
+    wait.until(EC.url_contains("https://b2c.passport.rt.ru/auth/realms/b2c/login-actions/authenticate?session"))
+
+    assert "https://b2c.passport.rt.ru/auth/realms/b2c/login-actions/authenticate?session" in browser.current_url
+
+
+    print("Восстановление пароля по почте прошло успешно!")
