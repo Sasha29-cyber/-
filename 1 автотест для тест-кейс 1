@@ -1,0 +1,37 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_successful_login_phone(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Enter valid phone number and password
+    phone_input = browser.find_element(By.ID, "username")
+    phone_input.send_keys("ваш_номер_телефона")  # Замените на ваш реальный номер
+
+    password_input = browser.find_element(By.ID, "password")
+    password_input.send_keys("ваш_пароль")  # Замените на ваш реальный пароль
+
+    login_button = browser.find_element(By.ID, "kc-login")
+    login_button.click()
+
+    # 3. Assert: Verify successful login (check if user is redirected)
+    # Ожидаем, что после успешной авторизации пользователь перенаправляется на страницу личного кабинета
+    wait = WebDriverWait(browser, 10)
+    wait.until(EC.url_contains("https://b2c.passport.rt.ru/account_b2c/"))
+
+    # Проверяем, что пользователь успешно залогинился
+    assert "account_b2c" in browser.current_url
+    assert "Личный кабинет" in browser.page_source  # Проверка по наличию текста на странице
+
+    print("Авторизация прошла успешно!")
