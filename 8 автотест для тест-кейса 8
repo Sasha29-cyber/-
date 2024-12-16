@@ -1,0 +1,40 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_automatic_tab_switching(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act & Assert: Enter data and verify tab switching
+
+    # Test 1: Enter an email, expect 'Email' tab to be active
+    input_field = browser.find_element(By.ID, "username")
+    input_field.send_keys("test@example.com")
+    wait = WebDriverWait(browser, 10)
+    wait.until(EC.presence_of_element_located((By.ID, "t-btn-tab-mail")))
+    assert "rt-tab--active" in browser.find_element(By.ID, "t-btn-tab-mail").get_attribute("class")
+    input_field.clear()
+
+    # Test 2: Enter a phone number, expect 'Phone' tab to be active
+    input_field.send_keys("1234567890")
+    wait.until(EC.presence_of_element_located((By.ID, "t-btn-tab-phone")))
+    assert "rt-tab--active" in browser.find_element(By.ID, "t-btn-tab-phone").get_attribute("class")
+    input_field.clear()
+
+    # Test 3: Enter a login, expect 'Login' tab to be active
+    input_field.send_keys("testlogin")
+    wait.until(EC.presence_of_element_located((By.ID, "t-btn-tab-login")))
+    assert "rt-tab--active" in browser.find_element(By.ID, "t-btn-tab-login").get_attribute("class")
+    input_field.clear()
+
+    print("Автоматическое переключение табов работает корректно!")
