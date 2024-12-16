@@ -1,0 +1,61 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_unsuccessful_registration_existing_email(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Click on 'Register' link
+    register_link = browser.find_element(By.ID, "kc-register")
+    register_link.click()
+
+    # 3. Act: Enter registration data (with existing email)
+    first_name_input = browser.find_element(By.NAME, "firstName")
+    first_name_input.send_keys("Тест")
+
+    last_name_input = browser.find_element(By.NAME, "lastName")
+    last_name_input.send_keys("Тестов")
+
+    region_select = browser.find_element(By.XPATH, "//div[@class='rt-select__arrow rt-select__arrow--no-label']")
+    region_select.click()
+    time.sleep(1)
+    region_option = browser.find_element(By.XPATH, "//div[@class='rt-select__list-item' and contains(text(),'Москва')]")
+    region_option.click()
+
+    email_input = browser.find_element(By.ID, "address")
+    email_input.send_keys("ваш_email")  # Замените на ваш реальный email
+
+    password_input = browser.find_element(By.ID, "password")
+    password_input.send_keys("TestPassword123") # Замените на желаемый новый пароль
+
+    password_confirm_input = browser.find_element(By.ID, "password-confirm")
+    password_confirm_input.send_keys("TestPassword123")
+
+    # Act: Нажать кнопку "Зарегистрироваться"
+    register_button = browser.find_element(By.NAME, "register")
+    register_button.click()
+
+    # 4. Assert: Verify unsuccessful registration (check error message)
+    # Ожидаем, что система не перенаправит пользователя и отобразит сообщение об ошибке
+    wait = WebDriverWait(browser, 10)
+    error_message = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "card-modal__title")))
+
+    # Проверяем, что сообщение об ошибке присутствует
+    assert error_message.is_displayed()
+    assert "Учетная запись с указанным email уже существует" in error_message.text
+
+    # Проверяем, что URL не изменился и пользователь остался на странице регистрации
+    assert "register" in browser.current_url
+    
+    print("Регистрация с существующим email не удалась, как и ожидалось!")
