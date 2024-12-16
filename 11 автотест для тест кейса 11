@@ -1,0 +1,52 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_successful_login_temp_code_existing_user(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Click on 'Get code'
+    get_code_button = browser.find_element(By.ID, "otp_get_code")
+    get_code_button.click()
+
+    # 3. Act: Enter valid phone number (for existing user)
+    phone_input = browser.find_element(By.ID, "phone")
+    phone_input.send_keys("ваш_номер_телефона")  # Замените на ваш реальный номер
+
+    # Act: Нажать кнопку "Продолжить"
+    continue_button = browser.find_element(By.ID, 'otp_send_code')
+    continue_button.click()
+
+    # 4. Act: Get and Enter valid temporary code (for existing user)
+    #  !!!ВНИМАНИЕ!!!: Здесь нужно перехватить код из SMS. Реальный автоматический перехват SMS может быть сложным,
+    #  поэтому мы будем использовать time.sleep() + ручной ввод кода.
+    #  В РЕАЛЬНЫХ АВТОТЕСТАХ НУЖНО ИСПОЛЬЗОВАТЬ ДРУГОЙ ПОДХОД (например, SMS API, мок-сервер и т.д.)
+    time.sleep(30)  # Даем время получить код
+
+    temp_code_input = browser.find_element(By.ID, "otp_code")
+    temp_code_input.send_keys("временный_код")  # Замените на ваш полученный код
+
+    # Act: Нажать кнопку "Продолжить"
+    continue_button_2 = browser.find_element(By.ID, 'otp_code_submit')
+    continue_button_2.click()
+
+    # 5. Assert: Verify successful login (check if user is redirected)
+    wait = WebDriverWait(browser, 10)
+    wait.until(EC.url_contains("https://b2c.passport.rt.ru/account_b2c/"))
+
+    # Проверяем, что пользователь успешно залогинился
+    assert "account_b2c" in browser.current_url
+    assert "Личный кабинет" in browser.page_source  # Проверка по наличию текста на странице
+
+    print("Авторизация по временному коду (сущ. пользователь) прошла успешно!")
