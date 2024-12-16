@@ -1,0 +1,78 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import random
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def generate_random_phone_number():
+     return '79' + str(random.randint(100000000, 999999999))
+
+
+def test_successful_registration_new_phone(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Click on 'Register' link
+    register_link = browser.find_element(By.ID, "kc-register")
+    register_link.click()
+
+    # 3. Act: Enter registration data
+    first_name_input = browser.find_element(By.NAME, "firstName")
+    first_name_input.send_keys("Тест")
+
+    last_name_input = browser.find_element(By.NAME, "lastName")
+    last_name_input.send_keys("Тестов")
+
+    region_select = browser.find_element(By.XPATH, "//div[@class='rt-select__arrow rt-select__arrow--no-label']")
+    region_select.click()
+    time.sleep(1)
+    region_option = browser.find_element(By.XPATH, "//div[@class='rt-select__list-item' and contains(text(),'Москва')]")
+    region_option.click()
+
+
+    phone_input = browser.find_element(By.ID, "address")
+    new_phone_number = generate_random_phone_number() # Генерируем новый номер телефона
+    phone_input.send_keys(new_phone_number)  # Замените на НОВЫЙ номер
+
+
+    password_input = browser.find_element(By.ID, "password")
+    password_input.send_keys("TestPassword123") # Замените на желаемый новый пароль
+
+    password_confirm_input = browser.find_element(By.ID, "password-confirm")
+    password_confirm_input.send_keys("TestPassword123")  # Замените на желаемый новый пароль
+
+    # Act: Нажать кнопку "Зарегистрироваться"
+    register_button = browser.find_element(By.NAME, "register")
+    register_button.click()
+
+
+    # 4. Act: Get and Enter valid SMS code
+    #  !!!ВНИМАНИЕ!!!: Здесь нужно перехватить код из SMS.
+    #  В РЕАЛЬНЫХ АВТОТЕСТАХ НУЖНО ИСПОЛЬЗОВАТЬ ДРУГОЙ ПОДХОД (например, SMS API, мок-сервер и т.д.)
+    time.sleep(30)  # Даем время получить код
+
+    sms_code_input = browser.find_element(By.ID, "code")
+    sms_code_input.send_keys("временный_код")  # Замените на ваш полученный код
+
+    # Act: Нажать кнопку "Подтвердить"
+    confirm_button = browser.find_element(By.NAME, "confirm")
+    confirm_button.click()
+
+    # 5. Assert: Verify successful registration (check if user is redirected)
+    wait = WebDriverWait(browser, 10)
+    wait.until(EC.url_contains("https://b2c.passport.rt.ru/account_b2c/"))
+
+    assert "account_b2c" in browser.current_url
+    assert "Личный кабинет" in browser.page_source
+
+
+    print("Регистрация с новым номером телефона прошла успешно!")
