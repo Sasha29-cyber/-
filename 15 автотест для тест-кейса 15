@@ -1,0 +1,72 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_unsuccessful_password_recovery_phone_invalid_password(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Click on the 'Forgot password?' link
+    forgot_password_link = browser.find_element(By.ID, "forgot-password")
+    forgot_password_link.click()
+
+    # 3. Act: Enter valid phone number for password recovery
+    phone_input = browser.find_element(By.ID, "phone")
+    phone_input.send_keys("ваш_номер_телефона")  # Замените на ваш реальный номер
+
+    captcha_input = browser.find_element(By.ID, 'captcha')
+    #  !!!ВНИМАНИЕ!!!: Тут нужно ввести капчу, автоматизировать сложно. Пока пропускаем
+    #  В РЕАЛЬНЫХ АВТОТЕСТАХ НУЖНО ИСПОЛЬЗОВАТЬ ДРУГОЙ ПОДХОД (например, обходить капчу, выключать ее, использовать мок-сервер и т.д.)
+    time.sleep(5) #Даем время ввести капчу
+
+    # Act: Нажать кнопку "Продолжить"
+    continue_button = browser.find_element(By.ID, 'reset-by-phone')
+    continue_button.click()
+
+    # 4. Act: Get and Enter valid SMS code
+    #  !!!ВНИМАНИЕ!!!: Здесь нужно перехватить код из SMS. Реальный автоматический перехват SMS может быть сложным,
+    #  поэтому мы будем использовать time.sleep() + ручной ввод кода.
+    #  В РЕАЛЬНЫХ АВТОТЕСТАХ НУЖНО ИСПОЛЬЗОВАТЬ ДРУГОЙ ПОДХОД (например, SMS API, мок-сервер и т.д.)
+    time.sleep(30)  # Даем время получить код
+
+    sms_code_input = browser.find_element(By.ID, "code")
+    sms_code_input.send_keys("временный_код")  # Замените на ваш полученный код
+
+     # Act: Нажать кнопку "Продолжить"
+    continue_button_2 = browser.find_element(By.ID, 'reset-by-code')
+    continue_button_2.click()
+
+    # 5. Act: Enter new password that doesn't match rules
+    new_password_input = browser.find_element(By.ID, "password-new")
+    new_password_input.send_keys("неверный_пароль") # Замените на невалидный пароль
+
+    confirm_password_input = browser.find_element(By.ID, "password-confirm")
+    confirm_password_input.send_keys("неверный_пароль")
+
+    # Act: Нажать кнопку "Сохранить"
+    save_password_button = browser.find_element(By.ID, "reset-password-submit")
+    save_password_button.click()
+
+    # 6. Assert: Verify unsuccessful password reset (check error message)
+    # Ожидаем, что система не перенаправит пользователя и отобразит сообщение об ошибке
+    wait = WebDriverWait(browser, 10)
+    error_message = wait.until(EC.visibility_of_element_located((By.ID, "password-error-message")))
+
+    # Проверяем, что сообщение об ошибке присутствует
+    assert error_message.is_displayed()
+    assert "Длина пароля должна быть не менее 8 символов" in error_message.text or "Пароль должен содержать только латинские буквы и цифры" in error_message.text
+
+    # Проверяем, что URL не изменился и пользователь остался на странице ввода нового пароля
+    assert "reset-password" in browser.current_url
+    
+    print("Восстановление пароля по телефону не удалось (неверный пароль), как и ожидалось!")
