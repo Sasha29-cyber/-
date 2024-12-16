@@ -1,0 +1,40 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+@pytest.fixture(scope="function")
+def browser():
+    driver = webdriver.Chrome()  # Или другой драйвер (Firefox, Safari)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_unsuccessful_login_wrong_password(browser):
+    # 1. Arrange: Open the login page
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Act: Enter valid phone number and invalid password
+    phone_input = browser.find_element(By.ID, "username")
+    phone_input.send_keys("ваш_номер_телефона")  # Замените на ваш реальный номер
+
+    password_input = browser.find_element(By.ID, "password")
+    password_input.send_keys("неверный_пароль")  # Замените на неверный пароль
+
+    login_button = browser.find_element(By.ID, "kc-login")
+    login_button.click()
+
+    # 3. Assert: Verify unsuccessful login (check error message)
+    # Ожидаем, что система не перенаправит пользователя и отобразит сообщение об ошибке
+    wait = WebDriverWait(browser, 10)
+    error_message = wait.until(EC.visibility_of_element_located((By.ID, "form-error-message")))
+
+    # Проверяем, что сообщение об ошибке присутствует
+    assert error_message.is_displayed()
+    assert "Неверный логин или пароль" in error_message.text
+
+    # Проверяем, что URL не изменился и пользователь остался на странице авторизации
+    assert "b2c.passport.rt.ru" in browser.current_url
+
+    print("Авторизация не удалась, как и ожидалось!")
