@@ -1,0 +1,40 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+
+@pytest.fixture(scope="function")
+def browser():
+    chrome_options = Options()
+    chrome_options.add_argument("--disable-cookie") # Блокируем cookie
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
+
+def test_cookie_check_authorization(browser):
+    # 1. Arrange: Open the login page with cookies blocked
+    browser.get("https://b2c.passport.rt.ru/")
+
+    # 2. Assert: Check that the cookie pop-up is displayed
+    wait = WebDriverWait(browser, 10)
+    cookie_popup = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "card-modal")))
+
+    # Проверяем, что pop-up присутствует и содержит нужный текст
+    assert cookie_popup.is_displayed()
+
+    title = cookie_popup.find_element(By.CLASS_NAME,"card-modal__title")
+    assert "Для корректной работы сайта необходимо включить поддержку cookie" == title.text
+    
+    hint = cookie_popup.find_element(By.CLASS_NAME,"card-modal__hint")
+    assert "В вашем браузере отключено использование cookie, пожалуйста, включите их или воспользуйтесь другим браузером." == hint.text
+
+    repeat_button = cookie_popup.find_element(By.CLASS_NAME, "rt-btn--orange")
+    assert repeat_button.is_displayed()
+
+    cookie_button = cookie_popup.find_element(By.CLASS_NAME, "rt-btn--gray")
+    assert cookie_button.is_displayed()
+
+    print("Проверка cookie при авторизации прошла успешно! Pop-up отображается корректно.")
